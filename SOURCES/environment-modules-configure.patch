@@ -1,0 +1,17 @@
+Partially reverts https://github.com/cea-hpc/modules/commit/6a80cd9a460160fee96ed46b175b716989adbf27.
+Fedora still uses rpm macros that add "--build=x86_64-redhat-linux-gnu" to the configure arguments
+and since this configure is not a proper gnu one, it would always error out and never build.
+
+See https://bugzilla.redhat.com/show_bug.cgi?id=1842562.
+
+--- a/configure	2020-07-30 14:13:34.000000000 +0200
++++ b/configure	2020-08-03 16:06:37.137023909 +0200
+@@ -598,8 +598,6 @@
+    --with-x|--without-x)
+       # pass argument supported by compat version to its ./configure script
+       compatarglist+="$arg " ;;
+-   *)
+-      echo_error "Unrecognized option \`$arg'" 1;;
+    esac
+ done
+ 
