@@ -1,0 +1,44 @@
+From 741f2e6b61b2c574e9c6972d3633653c26bb143a Mon Sep 17 00:00:00 2001
+From: Xavier Delaruelle <xavier.delaruelle@cea.fr>
+Date: Mon, 10 Aug 2020 19:22:46 +0200
+Subject: [PATCH] Skip module switch conflict set if old matches new
+
+`module switch` command used in modulefile is sometimes used to ensure a
+given version of a module is loaded. Currently loaded version of this
+module is unloaded to replace it by the designated specific version.
+This use case does not cope with the conflict declaration that is set
+over switched-off module specification. To support this use case,
+conflict definition is skipped if swapped-off module specification
+matches (includes) swapped-on module specification.
+
+Fixes #355
+---
+ modulecmd.tcl.in | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/modulecmd.tcl.in b/modulecmd.tcl.in
+index 3abd4ad9a..8658b90bd 100644
+--- a/modulecmd.tcl.in
++++ b/modulecmd.tcl.in
+@@ -9482,11 +9482,16 @@ proc cmdModuleSwitch {uasked old {new {}}} {
+    # mentionned on this module switch command set in a modulefile
+    set orig_auto_handling [getConf auto_handling]
+    if {!$uasked && $argold ne {}} {
+-      # temporarily disable auto handling just to record deps, not to try to
+-      # load or unload them (already tried)
+-      setConf auto_handling 0
+-      catch {conflict $argold}
+-      setConf auto_handling $orig_auto_handling
++      # skip conflict declaration if old spec matches new as in this case
++      # switch means *replace loaded version of mod by this specific version*
++      lassign [getPathToModule $new] newmodfile newmod
++      if {$newmod eq {} || ![modEq $argold $newmod eqstart]} {
++         # temporarily disable auto handling just to record deps, not to try
++         # to load or unload them (already tried)
++         setConf auto_handling 0
++         catch {conflict $argold}
++         setConf auto_handling $orig_auto_handling
++      }
+    }
+ 
+    # attempt load and depre reload only if unload succeed
