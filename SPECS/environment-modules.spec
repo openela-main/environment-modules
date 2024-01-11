@@ -3,7 +3,7 @@
 
 Name:           environment-modules
 Version:        4.5.2
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        Provides dynamic modification of a user's environment
 
 Group:          System Environment/Base
@@ -13,6 +13,7 @@ Source0:        http://downloads.sourceforge.net/modules/modules-%{version}.tar.
 Patch0001:      environment-modules-configure.patch
 Patch0002:      environment-modules-moulespath-initrc.patch
 Patch0003:      environment-modules-profilesh-misdetects-login-shell.patch
+Patch0004:      environment-modules-module-switch-mod-modvers.patch
 
 BuildRequires:  tcl-devel, libX11-devel
 BuildRequires:  dejagnu, sed, procps, hostname, man, less
@@ -192,6 +193,9 @@ fi
 
 
 %changelog
+* Mon Apr 24 2023 Lukáš Zaoral <lzaoral@redhat.com> - 4.5.2-4
+- Fix `module switch mod mod/vers` module loading (#2189252)
+
 * Wed Sep 21 2022 Lukáš Zaoral <lzaoral@redhat.com> - 4.5.2-3
 - Fix profile.sh login shell misdetection (#1815047)
 
