@@ -2,15 +2,13 @@
 %global vimdatadir %{_datadir}/vim/vimfiles
 
 Name:           environment-modules
-Version:        5.0.1
-Release:        2%{?dist}
+Version:        5.3.0
+Release:        1%{?dist}
 Summary:        Provides dynamic modification of a user's environment
 
 License:        GPLv2+
 URL:            http://modules.sourceforge.net/
 Source0:        http://downloads.sourceforge.net/modules/modules-%{version}.tar.bz2
-
-Patch1:         environment-modules-profilesh-misdetects-login-shell.patch
 
 BuildRequires:  tcl
 BuildRequires:  dejagnu
@@ -72,6 +70,7 @@ have access to the module alias.
            --vimdatadir=%{vimdatadir} \
            --enable-multilib-support \
            --disable-doc-install \
+           --disable-nagelfar-addons \
            --enable-modulespath \
            --with-python=/usr/bin/python3 \
            --with-modulepath=%{_datadir}/Modules/modulefiles:%{_sysconfdir}/modulefiles:%{_datadir}/modulefiles \
@@ -162,6 +161,9 @@ fi
 %{vimdatadir}/syntax/modulefile.vim
 
 %changelog
+* Wed May 17 2023 Lukáš Zaoral <lzaoral@redhat.com> - 5.3.0-1
+- Rebase to environment-modules 5.3.0 (rhbz#2207885)
+
 * Thu Sep 22 2022 Lukáš Zaoral <lzaoral@redhat.com> - 5.0.1-2
 - Fix profile.sh login shell misdetection (#2128975)
 
