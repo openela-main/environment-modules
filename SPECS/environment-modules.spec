@@ -3,12 +3,20 @@
 
 Name:           environment-modules
 Version:        5.3.0
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Provides dynamic modification of a user's environment
 
 License:        GPLv2+
 URL:            http://modules.sourceforge.net/
 Source0:        http://downloads.sourceforge.net/modules/modules-%{version}.tar.bz2
+
+# fix source-sh test with non-default manpath (RHEL-82109)
+# https://github.com/cea-hpc/modules/commit/a124745566804f8987a2c68944d395be10591f8c
+Patch0:         environment-modules-5.3.1-fix-source-sh-test.patch
+
+# fix intermittent test failures (RHEL-82109)
+# https://github.com/cea-hpc/modules/commit/8c757d59c068d7c41e78f59f575eca9d58785a36
+Patch1:         environment-modules-5.3.1-fix-intermittent-test-failures.patch
 
 BuildRequires:  tcl
 BuildRequires:  dejagnu
@@ -161,6 +169,10 @@ fi
 %{vimdatadir}/syntax/modulefile.vim
 
 %changelog
+* Mon Mar 17 2025 Lukáš Zaoral <lzaoral@redhat.com> - 5.3.0-2
+- fix intermittent test failures (RHEL-82109)
+- fix source-sh test with non-default manpath (RHEL-82109)
+
 * Wed May 17 2023 Lukáš Zaoral <lzaoral@redhat.com> - 5.3.0-1
 - Rebase to environment-modules 5.3.0 (rhbz#2207885)
 
