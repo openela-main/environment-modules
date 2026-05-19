@@ -1,28 +1,20 @@
 %global macrosdir %(d=%{_rpmconfigdir}/macros.d; [ -d $d ] || d=%{_sysconfdir}/rpm; echo $d)
-%global vimdatadir %{_datadir}/vim/vimfiles
 
 Name:           environment-modules
-Version:        5.3.1
-Release:        8%{?dist}
+Version:        5.6.1
+Release:        2%{?dist}
 Summary:        Provides dynamic modification of a user's environment
 
 License:        GPL-2.0-or-later
-URL:            http://modules.sourceforge.net/
+URL:            https://envmodules.io
 Source0:        http://downloads.sourceforge.net/modules/modules-%{version}.tar.bz2
-
-# fix source-sh test with non-default manpath (RHEL-62847)
-# https://github.com/cea-hpc/modules/commit/a124745566804f8987a2c68944d395be10591f8c
-Patch0:         environment-modules-5.3.1-fix-source-sh-test.patch
-
-# fix intermittent test failures (RHEL-62847)
-# https://github.com/cea-hpc/modules/commit/8c757d59c068d7c41e78f59f575eca9d58785a36
-Patch1:         environment-modules-5.3.1-fix-intermittent-test-failures.patch
 
 BuildRequires:  tcl
 BuildRequires:  dejagnu
 BuildRequires:  make
 BuildRequires:  sed
 BuildRequires:  less
+BuildRequires:  util-linux-core
 BuildRequires:  hostname
 BuildRequires:  procps-ng
 # specific requirements to build extension library
@@ -31,7 +23,11 @@ BuildRequires:  tcl-devel
 Requires:       tcl
 Requires:       sed
 Requires:       less
+Requires:       util-linux-core
+BuildRequires:  vim-filesystem
 Requires:       vim-filesystem
+BuildRequires:  emacs-nw
+Requires:       emacs-filesystem%{?_emacs_version: >= %{_emacs_version}}
 Requires:       procps-ng
 Requires:       man-db
 Requires(post): coreutils
@@ -40,8 +36,10 @@ Requires(postun): %{_sbindir}/update-alternatives
 Provides:       environment(modules)
 Obsoletes:      environment-modules-compat <= 4.8.99
 
+%if 0%{?fedora}
 # Tcl linter is useful for module lint command
 Recommends:     nagelfar
+%endif
 
 %description
 The Environment Modules package provides for the dynamic modification of
@@ -61,7 +59,7 @@ clean fashion. All popular shells are supported, including bash, ksh,
 zsh, sh, csh, tcsh, as well as some scripting languages such as perl.
 
 Modules are useful in managing different versions of applications.
-Modules can also be bundled into metamodules that will load an entire
+Modules can also be bundled into meta-modules that will load an entire
 suite of different applications.
 
 NOTE: You will need to get a new shell after installing this package to
@@ -79,11 +77,12 @@ have access to the module alias.
            --bindir=%{_datadir}/Modules/bin \
            --libexecdir=%{_datadir}/Modules/libexec \
            --mandir=%{_mandir} \
-           --vimdatadir=%{vimdatadir} \
+           --vimdatadir=%{vimfiles_root} \
+           --emacsdatadir=%{_emacs_sitelispdir}/%{name} \
            --nagelfardatadir=%{_datadir}/Modules/nagelfar \
-           --with-bashcompletiondir=%{_datadir}/bash-completion/completions \
-           --with-fishcompletiondir=%{_datadir}/fish/vendor_completions.d \
-           --with-zshcompletiondir=%{_datadir}/zsh/site-functions \
+           --with-bashcompletiondir=%{bash_completions_dir} \
+           --with-fishcompletiondir=%{fish_completions_dir} \
+           --with-zshcompletiondir=%{zsh_completions_dir} \
            --enable-multilib-support \
            --disable-doc-install \
            --enable-modulespath \
@@ -92,6 +91,9 @@ have access to the module alias.
            --with-quarantine-vars='LD_LIBRARY_PATH LD_PRELOAD'
 
 %make_build
+
+# compile Elisp file
+%{_emacs_bytecompile} share/emacs/lisp/modulefile-mode.el
 
 
 %install
@@ -120,7 +122,10 @@ mv {doc/build/,}INSTALL.txt
 mv {doc/build/,}changes.txt
 
 # install the rpm config file
-install -Dpm 644 contrib/rpm/macros.%{name} %{buildroot}/%{macrosdir}/macros.%{name}
+install -Dpm 644 share/rpm/macros.%{name} %{buildroot}/%{macrosdir}/macros.%{name}
+
+# install Emacs init file
+install -Dpm 644 share/emacs/lisp/%{name}-init.el %{buildroot}/%{_emacs_sitestartdir}/%{name}-init.el
 
 
 %check
@@ -136,18 +141,18 @@ make test QUICKTEST=1
 
 # Migration from version 3.x to 4
 if [ "$(readlink /etc/alternatives/modules.sh)" = '%{_datadir}/Modules/init/modules.sh' ]; then
-  %{_sbindir}/update-alternatives --remove modules.sh %{_datadir}/Modules/init/modules.sh
+  update-alternatives --remove modules.sh %{_datadir}/Modules/init/modules.sh
 fi
 
-%{_sbindir}/update-alternatives \
+update-alternatives \
   --install %{_sysconfdir}/profile.d/modules.sh modules.sh %{_datadir}/Modules/init/profile.sh 40 \
-  --slave %{_sysconfdir}/profile.d/modules.csh modules.csh %{_datadir}/Modules/init/profile.csh \
-  --slave %{_datadir}/fish/vendor_conf.d/modules.fish modules.fish %{_datadir}/Modules/init/fish \
-  --slave %{_bindir}/modulecmd modulecmd %{_datadir}/Modules/libexec/modulecmd.tcl
+  --follower %{_sysconfdir}/profile.d/modules.csh modules.csh %{_datadir}/Modules/init/profile.csh \
+  --follower %{_datadir}/fish/vendor_conf.d/modules.fish modules.fish %{_datadir}/Modules/init/fish \
+  --follower %{_bindir}/modulecmd modulecmd %{_datadir}/Modules/libexec/modulecmd.tcl
 
 %postun
 if [ $1 -eq 0 ] ; then
-  %{_sbindir}/update-alternatives --remove modules.sh %{_datadir}/Modules/init/profile.sh
+  update-alternatives --remove modules.sh %{_datadir}/Modules/init/profile.sh
 fi
 
 
@@ -170,31 +175,42 @@ fi
 %dir %{_datadir}/Modules/init
 %{_datadir}/Modules/init/*
 # do not need to require shell package as we "own" completion dir
-%dir %{_datadir}/bash-completion/completions
-%{_datadir}/bash-completion/completions/module
-%{_datadir}/bash-completion/completions/ml
-%dir %{_datadir}/zsh/site-functions
-%{_datadir}/zsh/site-functions/_module
-%dir %{_datadir}/fish/vendor_completions.d
-%{_datadir}/fish/vendor_completions.d/module.fish
+%dir %{bash_completions_dir}
+%{bash_completions_dir}/module
+%{bash_completions_dir}/ml
+%dir %{zsh_completions_dir}
+%{zsh_completions_dir}/_module
+%dir %{fish_completions_dir}
+%{fish_completions_dir}/module.fish
 %dir %{_sysconfdir}/%{name}
 %config(noreplace) %{_sysconfdir}/%{name}/initrc
 %config(noreplace) %{_sysconfdir}/%{name}/modulespath
 %config(noreplace) %{_sysconfdir}/%{name}/siteconfig.tcl
 %{_datadir}/Modules/modulefiles
 %{_datadir}/modulefiles
+%{_mandir}/man1/envml.1.gz
 %{_mandir}/man1/ml.1.gz
 %{_mandir}/man1/module.1.gz
-%{_mandir}/man4/modulefile.4.gz
+%{_mandir}/man5/modulefile.5.gz
 %{macrosdir}/macros.%{name}
-%{vimdatadir}/ftdetect/modulefile.vim
-%{vimdatadir}/ftplugin/modulefile.vim
-%{vimdatadir}/syntax/modulefile.vim
+%{vimfiles_root}/ftdetect/modulefile.vim
+%{vimfiles_root}/ftplugin/modulefile.vim
+%{vimfiles_root}/syntax/modulefile.vim
+%dir %{_emacs_sitelispdir}/%{name}
+%{_emacs_sitelispdir}/%{name}/*
+%{_emacs_sitestartdir}/%{name}-init.el
 %dir %{_datadir}/Modules/nagelfar
 %{_datadir}/Modules/nagelfar/*
 
 
 %changelog
+* Thu Jan 15 2026 Lukáš Zaoral <lzaoral@redhat.com> - 5.6.1-2
+- remove recommends on nagelfar (RHEL-139084)
+
+* Fri Dec 12 2025 Lukáš Zaoral <lzaoral@redhat.com> - 5.6.1-1
+- rebase to 5.6.1 (RHEL-132336)
+  + Based on spec by Xavier Delaruelle in Fedora Rawhide.  Thanks a lot!
+
 * Tue Oct 29 2024 Troy Dawson <tdawson@redhat.com> - 5.3.1-8
 - Bump release for October 2024 mass rebuild:
   Resolves: RHEL-64018
