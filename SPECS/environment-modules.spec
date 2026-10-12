@@ -2,12 +2,16 @@
 
 Name:           environment-modules
 Version:        5.6.1
-Release:        2%{?dist}
+Release:        2%{?dist}.1
 Summary:        Provides dynamic modification of a user's environment
 
 License:        GPL-2.0-or-later
 URL:            https://envmodules.io
 Source0:        http://downloads.sourceforge.net/modules/modules-%{version}.tar.bz2
+
+# https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2026-85013
+# https://github.com/envmodules/modules/commit/d6df8f322e05ff26468827aeb448eb221d87474f
+Patch0:         environment-modules-5.6.1-CVE-2026-85013.patch
 
 BuildRequires:  tcl
 BuildRequires:  dejagnu
@@ -204,6 +208,10 @@ fi
 
 
 %changelog
+* Tue Sep 15 2026 RHEL Packaging Agent <redhat-ymir-agent@redhat.com> - 5.6.1-2.1
+- fix command injection in bash Tab completion (CVE-2026-85013)
+  (RHEL-260562)
+
 * Thu Jan 15 2026 Lukáš Zaoral <lzaoral@redhat.com> - 5.6.1-2
 - remove recommends on nagelfar (RHEL-139084)
 
