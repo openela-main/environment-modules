@@ -3,7 +3,7 @@
 
 Name:           environment-modules
 Version:        4.5.2
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        Provides dynamic modification of a user's environment
 
 Group:          System Environment/Base
@@ -14,6 +14,8 @@ Patch0001:      environment-modules-configure.patch
 Patch0002:      environment-modules-moulespath-initrc.patch
 Patch0003:      environment-modules-profilesh-misdetects-login-shell.patch
 Patch0004:      environment-modules-module-switch-mod-modvers.patch
+# https://github.com/envmodules/modules/commit/7ee05aef1e16beeb275008239e0fe5f0d5f977d7
+Patch0005:      environment-modules-4.5.2-CVE-2026-85013.patch
 
 BuildRequires:  tcl-devel, libX11-devel
 BuildRequires:  dejagnu, sed, procps, hostname, man, less
@@ -193,6 +195,10 @@ fi
 
 
 %changelog
+* Tue Sep 15 2026 RHEL Packaging Agent <redhat-ymir-agent@redhat.com> - 4.5.2-5
+- Fix command injection in bash Tab completion via compgen -W expansion
+  (CVE-2026-85013)
+
 * Mon Apr 24 2023 Lukáš Zaoral <lzaoral@redhat.com> - 4.5.2-4
 - Fix `module switch mod mod/vers` module loading (#2189252)
 
