@@ -3,7 +3,7 @@
 
 Name:           environment-modules
 Version:        5.3.0
-Release:        2%{?dist}.1
+Release:        3%{?dist}
 Summary:        Provides dynamic modification of a user's environment
 
 License:        GPLv2+
@@ -19,7 +19,7 @@ Patch0:         environment-modules-5.3.1-fix-source-sh-test.patch
 Patch1:         environment-modules-5.3.1-fix-intermittent-test-failures.patch
 
 # fix command injection in bash Tab completion (CVE-2026-85013)
-# https://github.com/envmodules/modules/commit/d6df8f322e05ff26468827aeb448eb221d87474f
+# https://github.com/cea-hpc/modules/commit/84c712b4b12d1a9068ee7c1cde95ec57bd121ecb
 Patch2:         environment-modules-5.3.0-CVE-2026-85013.patch
 
 BuildRequires:  tcl
@@ -173,8 +173,9 @@ fi
 %{vimdatadir}/syntax/modulefile.vim
 
 %changelog
-* Tue Sep 15 2026 RHEL Packaging Agent <redhat-ymir-agent@redhat.com> - 5.3.0-2.1
-- fix command injection in bash Tab completion (CVE-2026-85013)
+* Tue Sep 15 2026 RHEL Packaging Agent <redhat-ymir-agent@redhat.com> - 5.3.0-3
+- fix command injection in bash Tab completion via compgen -W
+  expansion (CVE-2026-85013)
 
 * Mon Mar 17 2025 Lukáš Zaoral <lzaoral@redhat.com> - 5.3.0-2
 - fix intermittent test failures (RHEL-82109)
